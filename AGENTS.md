@@ -29,6 +29,7 @@ Educational experiment: Snake + DQN in Python. The owner wants to figure out mos
 
 - For searching use `rg` instead of `grep`, for files use `fd` instead of `find`.
 - Project on `pyproject.toml` + `.python-version`. Run commands via `uv run`.
+- After every code change, run `uv run ruff check .` and `uv run ruff format .`.
 - Format files, directories, functions, and class names with backticks.
 - Write math as \( ... \) inline and \[ ... \] for blocks.
 
