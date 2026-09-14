@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 from collections import deque
 from dataclasses import dataclass
 from enum import Enum
@@ -84,7 +83,6 @@ class Game:
 
     def _spawn_food(self) -> None:
         pass
-
 
 
 def main():

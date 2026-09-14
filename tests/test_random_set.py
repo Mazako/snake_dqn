@@ -1,5 +1,5 @@
-from random import Random
 import unittest
+from random import Random
 
 from random_set import RandomSet
 
