@@ -36,7 +36,8 @@ class Snake:
 
         if not grow:
             tail = self.segments.pop()
-            self.occupied.remove(tail)
+            if tail != next_head:
+                self.occupied.remove(tail)
             return True, tail
 
         return True, None

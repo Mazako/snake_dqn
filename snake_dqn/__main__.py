@@ -1,6 +1,4 @@
-def main() -> None:
-    print("Hello from snake-dqn!")
-
+from .pygame_app import main
 
 if __name__ == "__main__":
     main()
