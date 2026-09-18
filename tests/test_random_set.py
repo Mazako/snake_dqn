@@ -1,7 +1,7 @@
 import unittest
 from random import Random
 
-from random_set import RandomSet
+from snake_dqn.random_set import RandomSet
 
 
 class RandomSetTests(unittest.TestCase):

@@ -1,7 +1,7 @@
 from .direction import Direction
-from .entity import Entity
 from .game import Game
+from .position import Position
 from .random_set import RandomSet
 from .snake import Snake
 
-__all__ = ["Direction", "Entity", "Game", "RandomSet", "Snake"]
+__all__ = ["Direction", "Game", "Position", "RandomSet", "Snake"]

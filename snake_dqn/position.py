@@ -6,13 +6,13 @@ from .direction import Direction
 
 
 @dataclass(frozen=True, slots=True)
-class Entity:
+class Position:
     x: int
     y: int
 
-    def next_pos(self, direction: Direction, board_size: int) -> Entity:
+    def next_pos(self, direction: Direction, board_size: int) -> Position:
         dx, dy = direction.delta
-        return Entity(
+        return Position(
             x=(self.x + dx) % board_size,
             y=(self.y + dy) % board_size,
         )

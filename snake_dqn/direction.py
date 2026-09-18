@@ -17,3 +17,25 @@ class Direction(Enum):
         dx, dy = self.delta
         other_dx, other_dy = other.delta
         return (dx, dy) == (-other_dx, -other_dy)
+
+    def left(self) -> Direction:
+        match self:
+            case Direction.UP:
+                return Direction.LEFT
+            case Direction.LEFT:
+                return Direction.DOWN
+            case Direction.DOWN:
+                return Direction.RIGHT
+            case Direction.RIGHT:
+                return Direction.UP
+
+    def right(self) -> Direction:
+        match self:
+            case Direction.UP:
+                return Direction.RIGHT
+            case Direction.RIGHT:
+                return Direction.DOWN
+            case Direction.DOWN:
+                return Direction.LEFT
+            case Direction.LEFT:
+                return Direction.UP
