@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from random import Random
 
+import numpy as np
+
+from snake_dqn.agent import RelativeAction
+
 from .direction import Direction
 from .dqn_state import GameState
 from .position import Position
@@ -66,6 +70,13 @@ class Game:
 
         return True
 
+    def state_img(self) -> np.ndarray:
+        arr = np.zeros((self.size, self.size, 3), dtype=np.uint8)
+        arr[self.food.y, self.food.x] = [255, 0, 0]
+        for pos in self.snake.segments:
+            arr[pos.y, pos.x] = [255, 255, 255]
+        return arr
+
     def _is_blocked(self, direction: Direction) -> bool:
         next_head = self.snake.next_head(direction, self.size)
         will_grow = next_head == self.food
@@ -92,3 +103,23 @@ class Game:
             delta += self.size
 
         return delta / self.size
+
+    def step(self, action: RelativeAction) -> tuple[GameState, float, bool]:
+        if action is RelativeAction.LEFT:
+            self.snake.change_direction(self.snake.direction.left())
+        elif action is RelativeAction.RIGHT:
+            self.snake.change_direction(self.snake.direction.right())
+
+        score_before = self.score
+        still_playing = self.tick()
+        next_state = self.game_state()
+        done = not still_playing
+
+        if done:
+            reward = -1.0
+        elif self.score > score_before:
+            reward = 1.0
+        else:
+            reward = 0.0
+
+        return next_state, reward, done
