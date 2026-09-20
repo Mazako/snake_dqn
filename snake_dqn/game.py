@@ -120,6 +120,6 @@ class Game:
         elif self.score > score_before:
             reward = 1.0
         else:
-            reward = 0.0
+            reward = -0.1
 
         return next_state, reward, done

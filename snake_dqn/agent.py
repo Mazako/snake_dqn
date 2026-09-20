@@ -1,14 +1,14 @@
-from enum import Enum, auto
+from enum import IntEnum
 from random import Random
 from typing import Protocol
 
 from .dqn_state import GameState
 
 
-class RelativeAction(Enum):
-    LEFT = auto()
-    FORWARD = auto()
-    RIGHT = auto()
+class RelativeAction(IntEnum):
+    LEFT = 0
+    FORWARD = 1
+    RIGHT = 2
 
 
 class Agent(Protocol):
