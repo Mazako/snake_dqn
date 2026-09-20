@@ -116,7 +116,7 @@ class Game:
         done = not still_playing
 
         if done:
-            reward = -1.0
+            reward = -10.0
         elif self.score > score_before:
             reward = 1.0
         else:
