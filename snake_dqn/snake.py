@@ -44,3 +44,6 @@ class Snake:
 
     def __contains__(self, item: Position) -> bool:
         return item in self.occupied
+
+    def __len__(self) -> int:
+        return len(self.segments)

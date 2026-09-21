@@ -22,6 +22,9 @@ class GameStateTests(unittest.TestCase):
         self.assertEqual(state.blocked_right, 0.0)
         self.assertEqual(state.dx, 0.2)
         self.assertEqual(state.dy, -0.2)
+        self.assertEqual(state.occupied_ratio, 0.01)
+        self.assertEqual(state.tail_dx, 0.0)
+        self.assertEqual(state.tail_dy, 0.0)
 
     def test_state_marks_obstacle_in_front(self) -> None:
         game = Game(10)
@@ -35,6 +38,9 @@ class GameStateTests(unittest.TestCase):
         self.assertEqual(state.blocked_left, 0.0)
         self.assertEqual(state.blocked_forward, 1.0)
         self.assertEqual(state.blocked_right, 0.0)
+        self.assertEqual(state.occupied_ratio, 0.03)
+        self.assertEqual(state.tail_dx, 0.2)
+        self.assertEqual(state.tail_dy, 0.0)
 
     def test_state_uses_shortest_toroidal_food_delta(self) -> None:
         game = Game(10)

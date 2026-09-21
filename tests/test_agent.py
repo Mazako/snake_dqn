@@ -15,6 +15,9 @@ class RandomAgentTests(unittest.TestCase):
             blocked_right=0.0,
             dx=0.2,
             dy=-0.1,
+            occupied_ratio=0.2,
+            tail_dy=1.0,
+            tail_dx=0.2,
         )
 
         action = agent.choose_action(state)

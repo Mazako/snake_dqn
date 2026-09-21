@@ -41,6 +41,8 @@ class Game:
     def game_state(self) -> GameState:
         direction = self.snake.direction
         head = self.snake.head
+        tail = self.snake.segments[-1]
+        occupied_ratio = len(self.snake) / (self.size**2)
 
         return GameState(
             direction=self._one_hot_direction(direction),
@@ -49,6 +51,9 @@ class Game:
             blocked_right=float(self._is_blocked(direction.right())),
             dx=self._shortest_delta(head.x, self.food.x),
             dy=self._shortest_delta(head.y, self.food.y),
+            occupied_ratio=occupied_ratio,
+            tail_dx=self._shortest_delta(head.x, tail.x),
+            tail_dy=self._shortest_delta(head.y, tail.y),
         )
 
     def tick(self) -> bool:

@@ -13,6 +13,9 @@ class GameState:
     blocked_right: float
     dx: float
     dy: float
+    occupied_ratio: float
+    tail_dx: float
+    tail_dy: float
 
     def features(self) -> torch.Tensor:
         return torch.tensor(
@@ -23,6 +26,9 @@ class GameState:
                 self.blocked_right,
                 self.dx,
                 self.dy,
+                self.occupied_ratio,
+                self.tail_dx,
+                self.tail_dy,
             ),
             dtype=torch.float32,
         )
