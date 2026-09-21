@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from random import Random
 
-import numpy as np
+import torch
 
 from snake_dqn.agent import RelativeAction
 
@@ -20,6 +20,9 @@ class Game:
     food: Position
 
     def __init__(self, size: int) -> None:
+        if size < 3 or size % 2 == 0:
+            raise ValueError("size must be an odd integer at least 3")
+
         self.size = size
         self.score = 0
         self.epoch = 0
@@ -75,12 +78,32 @@ class Game:
 
         return True
 
-    def state_img(self) -> np.ndarray:
-        arr = np.zeros((self.size, self.size, 3), dtype=np.uint8)
-        arr[self.food.y, self.food.x] = [255, 0, 0]
+    def state_img(self) -> torch.Tensor:
+        img = torch.zeros((2, self.size, self.size), dtype=torch.float32)
         for pos in self.snake.segments:
-            arr[pos.y, pos.x] = [255, 255, 255]
-        return arr
+            img[0, pos.y, pos.x] = 1.0
+        img[1, self.food.y, self.food.x] = 1.0
+
+        head = self.snake.head
+        center_x = self.size // 2
+        center_y = self.size // 2
+        img = torch.roll(
+            img,
+            shifts=(center_y - head.y, center_x - head.x),
+            dims=(-2, -1),
+        )
+
+        match self.snake.direction:
+            case Direction.UP:
+                rotations = 0
+            case Direction.RIGHT:
+                rotations = 1
+            case Direction.DOWN:
+                rotations = 2
+            case Direction.LEFT:
+                rotations = 3
+
+        return torch.rot90(img, k=rotations, dims=(-2, -1))
 
     def _is_blocked(self, direction: Direction) -> bool:
         next_head = self.snake.next_head(direction, self.size)

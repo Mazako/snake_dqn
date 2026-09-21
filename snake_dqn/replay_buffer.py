@@ -5,15 +5,14 @@ from random import Random
 import torch
 
 from .agent import RelativeAction
-from .dqn_state import GameState
 
 
 @dataclass(frozen=True, slots=True)
 class Transition:
-    state: GameState
+    state: torch.Tensor
     action: RelativeAction
     reward: float
-    next_state: GameState
+    next_state: torch.Tensor
     done: bool
 
 
@@ -39,7 +38,7 @@ class ReplayBuffer:
         batch = self._rng.sample(list(self._transitions), batch_size)
 
         return (
-            torch.stack([transition.state.features() for transition in batch]),
+            torch.stack([transition.state for transition in batch]),
             torch.tensor(
                 [transition.action.value for transition in batch],
                 dtype=torch.long,
@@ -48,7 +47,7 @@ class ReplayBuffer:
                 [transition.reward for transition in batch],
                 dtype=torch.float32,
             ),
-            torch.stack([transition.next_state.features() for transition in batch]),
+            torch.stack([transition.next_state for transition in batch]),
             torch.tensor(
                 [transition.done for transition in batch],
                 dtype=torch.float32,
