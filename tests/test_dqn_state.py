@@ -1,12 +1,40 @@
 import unittest
 from collections import deque
 
+from snake_dqn.agent import RelativeAction
 from snake_dqn.direction import Direction
 from snake_dqn.game import Game
 from snake_dqn.position import Position
+from snake_dqn.random_set import RandomSet
 
 
 class GameStateTests(unittest.TestCase):
+    def test_game_ends_when_snake_fills_board(self) -> None:
+        game = Game(3)
+        food = Position(1, 0)
+        game.snake.direction = Direction.RIGHT
+        game.snake.segments = deque(
+            [
+                Position(0, 0),
+                Position(0, 1),
+                Position(1, 1),
+                Position(2, 1),
+                Position(2, 0),
+                Position(2, 2),
+                Position(1, 2),
+                Position(0, 2),
+            ]
+        )
+        game.snake.occupied = set(game.snake.segments)
+        game.free_coords_pool = RandomSet([food])
+        game.food = food
+
+        _, reward, done = game.step(RelativeAction.FORWARD)
+
+        self.assertTrue(done)
+        self.assertEqual(reward, 3.0)
+        self.assertEqual(game.score, 1)
+
     def test_game_rejects_even_board_size(self) -> None:
         with self.assertRaisesRegex(ValueError, "odd integer"):
             Game(10)

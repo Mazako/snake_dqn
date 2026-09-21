@@ -74,6 +74,8 @@ class Game:
 
         if will_eat:
             self.score += 1
+            if not self.free_coords_pool:
+                return False
             self.next_food()
 
         return True
@@ -142,8 +144,11 @@ class Game:
         still_playing = self.tick()
         next_state = self.game_state()
         done = not still_playing
+        won = done and not self.free_coords_pool
 
-        if done:
+        if won:
+            reward = 3.0
+        elif done:
             reward = -10.0
         elif self.score > score_before:
             reward = 3.0
