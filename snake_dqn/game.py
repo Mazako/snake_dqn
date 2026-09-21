@@ -81,10 +81,12 @@ class Game:
         return True
 
     def state_img(self) -> torch.Tensor:
-        img = torch.zeros((2, self.size, self.size), dtype=torch.float32)
+        img = torch.zeros((3, self.size, self.size), dtype=torch.float32)
         for pos in self.snake.segments:
             img[0, pos.y, pos.x] = 1.0
         img[1, self.food.y, self.food.x] = 1.0
+        tail = self.snake.segments[-1]
+        img[2, tail.y, tail.x] = 1.0
 
         head = self.snake.head
         center_x = self.size // 2
