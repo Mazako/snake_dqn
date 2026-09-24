@@ -10,7 +10,7 @@ from snake_dqn.random_set import RandomSet
 
 class GameStateTests(unittest.TestCase):
     def test_game_ends_when_snake_fills_board(self) -> None:
-        game = Game(3)
+        game = Game(3, max_steps=1)
         food = Position(1, 0)
         game.snake.direction = Direction.RIGHT
         game.snake.segments = deque(
@@ -34,6 +34,19 @@ class GameStateTests(unittest.TestCase):
         self.assertTrue(done)
         self.assertEqual(reward, 3.0)
         self.assertEqual(game.score, 1)
+
+    def test_game_penalizes_reaching_step_limit(self) -> None:
+        game = Game(11, max_steps=2)
+        game.food = Position(5, 5)
+
+        _, first_reward, first_done = game.step(RelativeAction.FORWARD)
+        _, last_reward, last_done = game.step(RelativeAction.FORWARD)
+
+        self.assertFalse(first_done)
+        self.assertEqual(first_reward, -0.01)
+        self.assertTrue(last_done)
+        self.assertEqual(last_reward, -10.0)
+        self.assertEqual(game.epoch, 2)
 
     def test_game_rejects_even_board_size(self) -> None:
         with self.assertRaisesRegex(ValueError, "odd integer"):

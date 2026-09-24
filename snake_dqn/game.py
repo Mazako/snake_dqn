@@ -7,10 +7,10 @@ import torch
 from snake_dqn.agent import RelativeAction
 
 from .direction import Direction
-from .state import GameState
 from .position import Position
 from .random_set import RandomSet
 from .snake import Snake
+from .state import GameState
 
 
 class Game:
@@ -19,11 +19,14 @@ class Game:
     snake: Snake
     food: Position
 
-    def __init__(self, size: int) -> None:
+    def __init__(self, size: int, max_steps: int | None = None) -> None:
         if size < 3 or size % 2 == 0:
             raise ValueError("size must be an odd integer at least 3")
+        if max_steps is not None and max_steps <= 0:
+            raise ValueError("max_steps must be positive")
 
         self.size = size
+        self.max_steps = max_steps
         self.score = 0
         self.epoch = 0
         self.snake = Snake(Position(0, 0), Direction.RIGHT)
@@ -145,8 +148,10 @@ class Game:
         score_before = self.score
         still_playing = self.tick()
         next_state = self.game_state()
-        done = not still_playing
-        won = done and not self.free_coords_pool
+        done = not still_playing or (
+            self.max_steps is not None and self.epoch >= self.max_steps
+        )
+        won = not still_playing and not self.free_coords_pool
 
         if won:
             reward = 3.0
