@@ -3,5 +3,4 @@ channels:
   - conda-forge
 dependencies:
   - python=3.12
-  - pygame>=2.6.1
   - ruff>=0.16.7

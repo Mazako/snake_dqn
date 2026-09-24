@@ -2,7 +2,7 @@ from enum import IntEnum
 from random import Random
 from typing import Protocol
 
-from .dqn_state import GameState
+from .state import GameState
 
 
 class RelativeAction(IntEnum):

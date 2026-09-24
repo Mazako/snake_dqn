@@ -9,3 +9,6 @@ wheels/
 # Local environments
 .venv
 .conda
+
+# Training checkpoints
+best_model.pt

@@ -2,7 +2,7 @@ import unittest
 from random import Random
 
 from snake_dqn.agent import RandomAgent, RelativeAction
-from snake_dqn.dqn_state import GameState
+from snake_dqn.state import GameState
 
 
 class RandomAgentTests(unittest.TestCase):

@@ -7,7 +7,7 @@ import torch
 from snake_dqn.agent import RelativeAction
 
 from .direction import Direction
-from .dqn_state import GameState
+from .state import GameState
 from .position import Position
 from .random_set import RandomSet
 from .snake import Snake
