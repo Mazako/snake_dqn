@@ -7,9 +7,10 @@ from .agent import RelativeAction
 from .replay_buffer import ReplayBuffer
 
 
-class DoubleDqn11x11(nn.Sequential):
+class DoubleDqn11x11(nn.Module):
     def __init__(self) -> None:
-        super().__init__(
+        super().__init__()
+        self.network = nn.Sequential(
             nn.Conv2d(3, 32, kernel_size=3, padding=1, padding_mode="circular"),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=3, padding=1, padding_mode="circular"),
@@ -21,9 +22,12 @@ class DoubleDqn11x11(nn.Sequential):
             nn.Linear(256, 3),
         )
 
+    def forward(self, states: torch.Tensor) -> torch.Tensor:
+        return self.network(states)
+
 
 def select_actions(
-    model: DoubleDqn11x11,
+    model: nn.Module,
     states: torch.Tensor,
     epsilon: float,
     rng: Random,
@@ -44,8 +48,8 @@ def select_actions(
 
 
 def train_step(
-    model: DoubleDqn11x11,
-    target_model: DoubleDqn11x11,
+    model: nn.Module,
+    target_model: nn.Module,
     buffer: ReplayBuffer,
     batch_size: int,
     gamma: float,
