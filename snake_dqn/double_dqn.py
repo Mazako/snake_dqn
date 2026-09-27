@@ -56,6 +56,7 @@ def train_step(
     loss_fn: nn.Module,
     optimizer: torch.optim.Optimizer,
     device: torch.device,
+    n_steps: int = 1,
 ) -> float | None:
     if len(buffer) < batch_size:
         return None
@@ -69,7 +70,7 @@ def train_step(
     with torch.no_grad():
         next_actions = model(next_states).argmax(dim=1, keepdim=True)
         next_q_values = target_model(next_states).gather(1, next_actions).squeeze(1)
-        targets = rewards + gamma * (1 - dones) * next_q_values
+        targets = rewards + gamma**n_steps * (1 - dones) * next_q_values
 
     loss = loss_fn(chosen_q_values, targets)
     optimizer.zero_grad(set_to_none=True)

@@ -56,3 +56,39 @@ class ReplayBuffer:
 
     def __len__(self) -> int:
         return len(self._transitions)
+
+
+class NStepReplayBuffer(ReplayBuffer):
+    def __init__(
+        self, capacity: int, rng: Random, num_envs: int, n_steps: int, gamma: float
+    ) -> None:
+        super().__init__(capacity, rng)
+        if num_envs <= 0:
+            raise ValueError("num_envs must be positive")
+        if n_steps <= 0:
+            raise ValueError("n_steps must be positive")
+
+        self.n_steps = n_steps
+        self.gamma = gamma
+        self._pending = [deque[Transition]() for _ in range(num_envs)]
+
+    def append(self, transition: Transition, env_index: int = 0) -> None:
+        pending = self._pending[env_index]
+        pending.append(transition)
+
+        if not transition.done and len(pending) < self.n_steps:
+            return
+
+        count = len(pending) if transition.done else 1
+        for _ in range(count):
+            window = list(pending)[: self.n_steps]
+            reward = sum(
+                self.gamma**step * item.reward for step, item in enumerate(window)
+            )
+            first, last = window[0], window[-1]
+            super().append(
+                Transition(
+                    first.state, first.action, reward, last.next_state, last.done
+                )
+            )
+            pending.popleft()

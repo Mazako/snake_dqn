@@ -12,3 +12,5 @@ wheels/
 
 # Training checkpoints
 best_model.pt
+best_model_v2.pt
+best_model_n_step.pt
