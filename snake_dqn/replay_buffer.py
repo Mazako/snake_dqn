@@ -20,6 +20,7 @@ class ReplayBuffer:
         self,
         capacity: int,
         seed: int = 42,
+        alpha: float = 0.6,
         beta: float = 0.4,
         priority_eps: float = 1e-6,
     ) -> None:
@@ -38,6 +39,7 @@ class ReplayBuffer:
         self._rng = torch.Generator()
         self._rng.manual_seed(seed)
         self._capacity = capacity
+        self.alpha = alpha
         self.beta = beta
         self.priority_eps = priority_eps
 
@@ -58,7 +60,7 @@ class ReplayBuffer:
         self._size = min((self._size + 1), self._capacity)
 
     def sample(
-        self, batch_size: int, alpha: float = 0.6
+        self, batch_size: int
     ) -> tuple[
         torch.Tensor,
         torch.Tensor,
@@ -73,13 +75,14 @@ class ReplayBuffer:
         if batch_size > len(self):
             raise ValueError("batch_size exceeds buffer size")
 
-        probs = self._priorities[: self._size] ** alpha
+        probs = self._priorities[: self._size] ** self.alpha
         probs /= probs.sum()
 
         indices = torch.multinomial(
             probs, batch_size, replacement=True, generator=self._rng
         )
         weights = (len(self) * probs[indices]) ** -self.beta
+        weights /= (len(self) * probs.min()) ** -self.beta
 
         return (
             self._states[indices],

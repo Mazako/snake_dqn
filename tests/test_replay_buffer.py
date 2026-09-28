@@ -42,7 +42,7 @@ class ReplayBufferTests(unittest.TestCase):
         saw_repeated_index = False
 
         for _ in range(20):
-            *_, weights, indices = buffer.sample(2, alpha=1.0)
+            *_, weights, indices = buffer.sample(2)
             expected_weights = (len(buffer) * probabilities[indices]).reciprocal()
             torch.testing.assert_close(weights, expected_weights)
             saw_repeated_index |= bool(indices[0] == indices[1])
