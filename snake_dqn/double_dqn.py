@@ -61,8 +61,9 @@ def train_step(
     if len(buffer) < batch_size:
         return None
 
-    states, actions_batch, rewards, next_states, dones = (
-        tensor.to(device) for tensor in buffer.sample(batch_size)
+    *batch, indices = buffer.sample(batch_size)
+    states, actions_batch, rewards, next_states, dones, weights = (
+        tensor.to(device) for tensor in batch
     )
 
     chosen_q_values = model(states).gather(1, actions_batch.unsqueeze(1)).squeeze(1)
@@ -71,10 +72,13 @@ def train_step(
         next_actions = model(next_states).argmax(dim=1, keepdim=True)
         next_q_values = target_model(next_states).gather(1, next_actions).squeeze(1)
         targets = rewards + gamma**n_steps * (1 - dones) * next_q_values
+        td_errors = targets - chosen_q_values
 
-    loss = loss_fn(chosen_q_values, targets)
+    loss_per_sample = loss_fn(chosen_q_values, targets)
+    loss = (weights * loss_per_sample).mean()
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
     optimizer.step()
 
+    buffer.update_priorities(td_errors, indices)
     return loss.item()

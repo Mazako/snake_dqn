@@ -1,6 +1,5 @@
 from collections import deque
 from dataclasses import dataclass
-from random import Random
 
 import torch
 
@@ -17,52 +16,94 @@ class Transition:
 
 
 class ReplayBuffer:
-    def __init__(self, capacity: int, rng: Random) -> None:
+    def __init__(
+        self,
+        capacity: int,
+        seed: int = 42,
+        beta: float = 0.4,
+        priority_eps: float = 1e-6,
+    ) -> None:
         if capacity <= 0:
             raise ValueError("capacity must be positive")
+        self._priorities = torch.zeros(capacity, dtype=torch.float32)
 
-        self._transitions: deque[Transition] = deque(maxlen=capacity)
-        self._rng = rng
+        self._states = torch.empty((capacity, 3, 11, 11), dtype=torch.float32)
+        self._actions = torch.empty(capacity, dtype=torch.int64)
+        self._rewards = torch.empty(capacity, dtype=torch.float32)
+        self._next_states = torch.empty((capacity, 3, 11, 11), dtype=torch.float32)
+        self._dones = torch.empty(capacity, dtype=torch.float32)
+
+        self._i = 0
+        self._size = 0
+        self._rng = torch.Generator()
+        self._rng.manual_seed(seed)
+        self._capacity = capacity
+        self.beta = beta
+        self.priority_eps = priority_eps
 
     def append(self, transition: Transition) -> None:
-        self._transitions.append(transition)
+        if self._size == 0:
+            prior = 1.0
+        else:
+            prior = self._priorities.max()
+        self._priorities[self._i] = prior
+
+        self._states[self._i, :, :, :] = transition.state
+        self._next_states[self._i, :, :, :] = transition.next_state
+        self._actions[self._i] = transition.action
+        self._rewards[self._i] = transition.reward
+        self._dones[self._i] = transition.done
+
+        self._i = (self._i + 1) % self._capacity
+        self._size = min((self._size + 1), self._capacity)
 
     def sample(
-        self, batch_size: int
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        self, batch_size: int, alpha: float = 0.6
+    ) -> tuple[
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+    ]:
         if batch_size <= 0:
             raise ValueError("batch_size must be positive")
         if batch_size > len(self):
             raise ValueError("batch_size exceeds buffer size")
 
-        batch = self._rng.sample(list(self._transitions), batch_size)
+        probs = self._priorities[: self._size] ** alpha
+        probs /= probs.sum()
+
+        indices = torch.multinomial(
+            probs, batch_size, replacement=True, generator=self._rng
+        )
+        weights = (len(self) * probs[indices]) ** -self.beta
 
         return (
-            torch.stack([transition.state for transition in batch]),
-            torch.tensor(
-                [transition.action.value for transition in batch],
-                dtype=torch.long,
-            ),
-            torch.tensor(
-                [transition.reward for transition in batch],
-                dtype=torch.float32,
-            ),
-            torch.stack([transition.next_state for transition in batch]),
-            torch.tensor(
-                [transition.done for transition in batch],
-                dtype=torch.float32,
-            ),
+            self._states[indices],
+            self._actions[indices],
+            self._rewards[indices],
+            self._next_states[indices],
+            self._dones[indices],
+            weights,
+            indices,
         )
 
     def __len__(self) -> int:
-        return len(self._transitions)
+        return self._size
+
+    def update_priorities(self, td_errors: torch.Tensor, indices: torch.Tensor) -> None:
+        priors = td_errors.detach().abs().cpu().float() + self.priority_eps
+        self._priorities[indices] = priors
 
 
 class NStepReplayBuffer(ReplayBuffer):
     def __init__(
-        self, capacity: int, rng: Random, num_envs: int, n_steps: int, gamma: float
+        self, capacity: int, num_envs: int, n_steps: int, gamma: float, seed: int = 42
     ) -> None:
-        super().__init__(capacity, rng)
+        super().__init__(capacity, seed=seed)
         if num_envs <= 0:
             raise ValueError("num_envs must be positive")
         if n_steps <= 0:
