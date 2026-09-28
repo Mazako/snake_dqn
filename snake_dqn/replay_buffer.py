@@ -16,18 +16,9 @@ class Transition:
 
 
 class ReplayBuffer:
-    def __init__(
-        self,
-        capacity: int,
-        seed: int = 42,
-        alpha: float = 0.6,
-        beta: float = 0.4,
-        priority_eps: float = 1e-6,
-    ) -> None:
+    def __init__(self, capacity: int, seed: int = 42) -> None:
         if capacity <= 0:
             raise ValueError("capacity must be positive")
-        self._priorities = torch.zeros(capacity, dtype=torch.float32)
-
         self._states = torch.empty((capacity, 3, 11, 11), dtype=torch.float32)
         self._actions = torch.empty(capacity, dtype=torch.int64)
         self._rewards = torch.empty(capacity, dtype=torch.float32)
@@ -39,17 +30,8 @@ class ReplayBuffer:
         self._rng = torch.Generator()
         self._rng.manual_seed(seed)
         self._capacity = capacity
-        self.alpha = alpha
-        self.beta = beta
-        self.priority_eps = priority_eps
 
     def append(self, transition: Transition) -> None:
-        if self._size == 0:
-            prior = 1.0
-        else:
-            prior = self._priorities.max()
-        self._priorities[self._i] = prior
-
         self._states[self._i, :, :, :] = transition.state
         self._next_states[self._i, :, :, :] = transition.next_state
         self._actions[self._i] = transition.action
@@ -67,22 +49,13 @@ class ReplayBuffer:
         torch.Tensor,
         torch.Tensor,
         torch.Tensor,
-        torch.Tensor,
-        torch.Tensor,
     ]:
         if batch_size <= 0:
             raise ValueError("batch_size must be positive")
         if batch_size > len(self):
             raise ValueError("batch_size exceeds buffer size")
 
-        probs = self._priorities[: self._size] ** self.alpha
-        probs /= probs.sum()
-
-        indices = torch.multinomial(
-            probs, batch_size, replacement=True, generator=self._rng
-        )
-        weights = (len(self) * probs[indices]) ** -self.beta
-        weights /= (len(self) * probs.min()) ** -self.beta
+        indices = torch.randint(len(self), (batch_size,), generator=self._rng)
 
         return (
             self._states[indices],
@@ -90,16 +63,10 @@ class ReplayBuffer:
             self._rewards[indices],
             self._next_states[indices],
             self._dones[indices],
-            weights,
-            indices,
         )
 
     def __len__(self) -> int:
         return self._size
-
-    def update_priorities(self, td_errors: torch.Tensor, indices: torch.Tensor) -> None:
-        priors = td_errors.detach().abs().cpu().float() + self.priority_eps
-        self._priorities[indices] = priors
 
 
 class NStepReplayBuffer(ReplayBuffer):

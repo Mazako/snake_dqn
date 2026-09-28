@@ -15,36 +15,37 @@ class ReplayBufferTests(unittest.TestCase):
         buffer.append(Transition(state, RelativeAction.LEFT, -0.01, next_state, False))
         buffer.append(Transition(next_state, RelativeAction.RIGHT, 3.0, state, True))
 
-        states, actions, rewards, next_states, dones, weights, indices = buffer.sample(
-            2
-        )
+        states, actions, rewards, next_states, dones = buffer.sample(2)
 
         self.assertEqual(states.shape, (2, 3, 11, 11))
         self.assertEqual(actions.shape, (2,))
         self.assertEqual(rewards.shape, (2,))
         self.assertEqual(next_states.shape, (2, 3, 11, 11))
         self.assertEqual(dones.shape, (2,))
-        self.assertEqual(weights.shape, (2,))
-        self.assertEqual(indices.shape, (2,))
 
-    def test_sample_uses_priorities_and_returns_weights_for_drawn_indices(self) -> None:
-        buffer = ReplayBuffer(4, beta=1.0)
+    def test_uniform_sample_repeats_indices_and_seed_repeats_draws(self) -> None:
+        first = ReplayBuffer(2, seed=42)
+        second = ReplayBuffer(2, seed=42)
         state = torch.zeros((3, 11, 11))
-        transition = Transition(state, RelativeAction.LEFT, 0.0, state, False)
-        buffer.append(transition)
-        buffer.append(transition)
-        buffer.update_priorities(torch.tensor([1.0, 3.0]), torch.tensor([0, 1]))
-
-        priorities = torch.tensor(
-            [1.0 + buffer.priority_eps, 3.0 + buffer.priority_eps]
+        transitions = (
+            Transition(state, RelativeAction.LEFT, 0.0, state, False),
+            Transition(state, RelativeAction.RIGHT, 0.0, state, False),
         )
-        probabilities = priorities / priorities.sum()
+        for transition in transitions:
+            first.append(transition)
+            second.append(transition)
+
+        counts = {RelativeAction.LEFT: 0, RelativeAction.RIGHT: 0}
         saw_repeated_index = False
 
-        for _ in range(20):
-            *_, weights, indices = buffer.sample(2)
-            expected_weights = (len(buffer) * probabilities[indices]).reciprocal()
-            torch.testing.assert_close(weights, expected_weights)
-            saw_repeated_index |= bool(indices[0] == indices[1])
+        for _ in range(200):
+            first_actions = first.sample(2)[1]
+            second_actions = second.sample(2)[1]
+            torch.testing.assert_close(first_actions, second_actions)
+            saw_repeated_index |= bool(first_actions[0] == first_actions[1])
+            for action in first_actions.tolist():
+                counts[RelativeAction(action)] += 1
 
         self.assertTrue(saw_repeated_index)
+        self.assertGreater(counts[RelativeAction.LEFT], 150)
+        self.assertGreater(counts[RelativeAction.RIGHT], 150)

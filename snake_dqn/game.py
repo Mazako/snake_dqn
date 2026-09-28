@@ -19,7 +19,9 @@ class Game:
     snake: Snake
     food: Position
 
-    def __init__(self, size: int, max_steps: int | None = None) -> None:
+    def __init__(
+        self, size: int, max_steps: int | None = None, seed: int | None = None
+    ) -> None:
         if size < 3 or size % 2 == 0:
             raise ValueError("size must be an odd integer at least 3")
         if max_steps is not None and max_steps <= 0:
@@ -30,9 +32,9 @@ class Game:
         self.score = 0
         self.epoch = 0
         self.snake = Snake(Position(0, 0), Direction.RIGHT)
-        self.rng = Random()
+        self.rng = Random(seed)
         self.free_coords_pool = RandomSet(
-            {Position(x, y) for x in range(size) for y in range(size)}
+            Position(x, y) for y in range(size) for x in range(size)
         )
         for segment in self.snake.occupied:
             self.free_coords_pool.discard(segment)

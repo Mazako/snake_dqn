@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from random import Random
 
 from .agent import RelativeAction
 from .game import Game
@@ -6,11 +7,17 @@ from .replay_buffer import Transition
 
 
 class MultiGamesManager:
-    def __init__(self, num_envs: int, board_size: int, max_steps: int) -> None:
+    def __init__(
+        self, num_envs: int, board_size: int, max_steps: int, seed: int | None = None
+    ) -> None:
         self.board_size = board_size
         self.max_steps = max_steps
-        self.games = [Game(board_size, max_steps) for _ in range(num_envs)]
+        self._rng = Random(seed)
+        self.games = [self._new_game() for _ in range(num_envs)]
         self.states = [game.state_img() for game in self.games]
+
+    def _new_game(self) -> Game:
+        return Game(self.board_size, self.max_steps, seed=self._rng.getrandbits(64))
 
     def step(
         self, actions: Sequence[RelativeAction], remaining_episodes: int
@@ -27,7 +34,7 @@ class MultiGamesManager:
 
             if done:
                 completed_scores.append(game.score)
-                self.games[index] = Game(self.board_size, self.max_steps)
+                self.games[index] = self._new_game()
                 self.states[index] = self.games[index].state_img()
             else:
                 self.states[index] = next_state
