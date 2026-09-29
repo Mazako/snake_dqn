@@ -4,11 +4,21 @@ from collections import deque
 from snake_dqn.agent import RelativeAction
 from snake_dqn.direction import Direction
 from snake_dqn.game import Game
+from snake_dqn.multi_games_manager import MultiGamesManager
 from snake_dqn.position import Position
 from snake_dqn.random_set import RandomSet
 
 
 class GameStateTests(unittest.TestCase):
+    def test_seed_repeats_food_sequence(self) -> None:
+        first = Game(11, seed=42)
+        second = Game(11, seed=42)
+
+        for _ in range(10):
+            self.assertEqual(first.food, second.food)
+            first.next_food()
+            second.next_food()
+
     def test_game_ends_when_snake_fills_board(self) -> None:
         game = Game(3, max_steps=1)
         food = Position(1, 0)
@@ -97,3 +107,26 @@ class GameStateTests(unittest.TestCase):
 
         self.assertEqual(state.dx, -1 / 11)
         self.assertEqual(state.dy, 1 / 11)
+
+
+class MultiGamesManagerTests(unittest.TestCase):
+    def test_seed_repeats_games_after_resets(self) -> None:
+        first = MultiGamesManager(3, 11, 1, seed=42)
+        second = MultiGamesManager(3, 11, 1, seed=42)
+
+        for _ in range(5):
+            self.assertEqual(
+                [game.food for game in first.games],
+                [game.food for game in second.games],
+            )
+            first_transitions, first_scores = first.step(
+                [RelativeAction.FORWARD] * 3, 100
+            )
+            second_transitions, second_scores = second.step(
+                [RelativeAction.FORWARD] * 3, 100
+            )
+            self.assertEqual(first_scores, second_scores)
+            self.assertEqual(
+                [transition.reward for transition in first_transitions],
+                [transition.reward for transition in second_transitions],
+            )
