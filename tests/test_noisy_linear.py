@@ -112,7 +112,7 @@ class NoisyLinearTests(unittest.TestCase):
 
         for parameter in self.layer.parameters():
             self.assertIsNotNone(parameter.grad)
-            self.assertGreater(parameter.grad.abs().sum().item(), 0.0)
+            self.assertGreater(parameter.grad.abs().sum().item(), 0.0) # type: ignore
         for buffer in self.layer.buffers():
             self.assertIsNone(buffer.grad)
 
