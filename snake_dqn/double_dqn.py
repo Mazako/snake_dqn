@@ -1,5 +1,3 @@
-from random import Random
-
 import torch
 from torch import nn
 
@@ -7,44 +5,13 @@ from .agent import RelativeAction
 from .replay_buffer import ReplayBuffer
 
 
-class DoubleDqn11x11(nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-        self.network = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, padding=1, padding_mode="circular"),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=3, padding=1, padding_mode="circular"),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1, padding_mode="circular"),
-            nn.Flatten(),
-            nn.Linear(64 * 11 * 11, 256),
-            nn.ReLU(),
-            nn.Linear(256, 3),
-        )
-
-    def forward(self, states: torch.Tensor) -> torch.Tensor:
-        return self.network(states)
-
-
 def select_actions(
-    model: nn.Module,
-    states: torch.Tensor,
-    epsilon: float,
-    rng: Random,
-    device: torch.device,
+    model: nn.Module, states: torch.Tensor, device: torch.device
 ) -> list[RelativeAction]:
-    if epsilon == 1.0:
-        return [rng.choice(tuple(RelativeAction)) for _ in states]
-
     with torch.no_grad():
         action_indices = model(states.to(device)).argmax(dim=1).tolist()
 
-    return [
-        rng.choice(tuple(RelativeAction))
-        if rng.random() < epsilon
-        else RelativeAction(action_index)
-        for action_index in action_indices
-    ]
+    return [RelativeAction(action_index) for action_index in action_indices]
 
 
 def train_step(
