@@ -45,3 +45,21 @@ def train_step(
     optimizer.step()
 
     return loss.item()
+
+
+def estimate_support_range(
+    gamma: float,
+    apple_reward: float,
+    step_reward: float,
+    death_reward: float,
+    apple_interval: int,
+) -> tuple[float, float]:
+    if not 0 < gamma < 1:
+        raise ValueError("gamma must be in (0, 1)")
+    if apple_interval <= 0:
+        raise ValueError("apple_interval must be positive")
+
+    gamma_T = gamma**apple_interval
+    v_min = step_reward + gamma * death_reward
+    v_max = apple_reward * gamma_T / (1 - gamma_T) + step_reward / (1 - gamma)
+    return (v_min, v_max)

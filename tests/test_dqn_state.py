@@ -3,8 +3,9 @@ from collections import deque
 
 from snake_dqn.agent import RelativeAction
 from snake_dqn.direction import Direction
+from snake_dqn.end_reason import EndReason
 from snake_dqn.game import Game
-from snake_dqn.multi_games_manager import MultiGamesManager
+from snake_dqn.multi_games_manager import EpisodeResult, MultiGamesManager
 from snake_dqn.position import Position
 from snake_dqn.random_set import RandomSet
 
@@ -20,7 +21,7 @@ class GameStateTests(unittest.TestCase):
             second.next_food()
 
     def test_game_ends_when_snake_fills_board(self) -> None:
-        game = Game(3, max_steps=1)
+        game = Game(3)
         food = Position(1, 0)
         game.snake.direction = Direction.RIGHT
         game.snake.segments = deque(
@@ -44,19 +45,7 @@ class GameStateTests(unittest.TestCase):
         self.assertTrue(done)
         self.assertEqual(reward, 3.0)
         self.assertEqual(game.score, 1)
-
-    def test_game_penalizes_reaching_step_limit(self) -> None:
-        game = Game(11, max_steps=2)
-        game.food = Position(5, 5)
-
-        _, first_reward, first_done = game.step(RelativeAction.FORWARD)
-        _, last_reward, last_done = game.step(RelativeAction.FORWARD)
-
-        self.assertFalse(first_done)
-        self.assertEqual(first_reward, -0.01)
-        self.assertTrue(last_done)
-        self.assertEqual(last_reward, -10.0)
-        self.assertEqual(game.epoch, 2)
+        self.assertIs(game.end_reason, EndReason.WIN)
 
     def test_game_rejects_even_board_size(self) -> None:
         with self.assertRaisesRegex(ValueError, "odd integer"):
@@ -111,22 +100,32 @@ class GameStateTests(unittest.TestCase):
 
 class MultiGamesManagerTests(unittest.TestCase):
     def test_seed_repeats_games_after_resets(self) -> None:
-        first = MultiGamesManager(3, 11, 1, seed=42)
-        second = MultiGamesManager(3, 11, 1, seed=42)
+        first = MultiGamesManager(3, 11, seed=42)
+        second = MultiGamesManager(3, 11, seed=42)
 
-        for _ in range(5):
+        for _ in range(30):
             self.assertEqual(
                 [game.food for game in first.games],
                 [game.food for game in second.games],
             )
-            first_transitions, first_scores = first.step(
+            first_transitions, first_episodes = first.step(
                 [RelativeAction.FORWARD] * 3, 100
             )
-            second_transitions, second_scores = second.step(
+            second_transitions, second_episodes = second.step(
                 [RelativeAction.FORWARD] * 3, 100
             )
-            self.assertEqual(first_scores, second_scores)
+            self.assertEqual(first_episodes, second_episodes)
             self.assertEqual(
                 [transition.reward for transition in first_transitions],
                 [transition.reward for transition in second_transitions],
             )
+
+    def test_manager_reports_end_reason_of_finished_episode(self) -> None:
+        manager = MultiGamesManager(1, 11, seed=42)
+        game = manager.games[0]
+        game.food = Position(5, 5)
+        game.steps_since_apple = game.hunger_limit - 1
+
+        _, episodes = manager.step([RelativeAction.FORWARD], 100)
+
+        self.assertEqual(episodes, [EpisodeResult(0, EndReason.STARVATION)])

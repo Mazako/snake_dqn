@@ -7,6 +7,7 @@ import torch
 from snake_dqn.agent import RelativeAction
 
 from .direction import Direction
+from .end_reason import EndReason
 from .position import Position
 from .random_set import RandomSet
 from .snake import Snake
@@ -15,22 +16,33 @@ from .state import GameState
 
 class Game:
     epoch: int
+    steps_since_apple: int
+    end_reason: EndReason | None
     score: int
     snake: Snake
     food: Position
 
     def __init__(
-        self, size: int, max_steps: int | None = None, seed: int | None = None
+        self,
+        size: int,
+        seed: int | None = None,
+        hunger_base: int | None = None,
+        hunger_per_segment: int = 2,
     ) -> None:
         if size < 3 or size % 2 == 0:
             raise ValueError("size must be an odd integer at least 3")
-        if max_steps is not None and max_steps <= 0:
-            raise ValueError("max_steps must be positive")
+        if hunger_base is not None and hunger_base <= 0:
+            raise ValueError("hunger_base must be positive")
+        if hunger_per_segment < 0:
+            raise ValueError("hunger_per_segment must not be negative")
 
         self.size = size
-        self.max_steps = max_steps
+        self.hunger_base = 2 * size if hunger_base is None else hunger_base
+        self.hunger_per_segment = hunger_per_segment
         self.score = 0
         self.epoch = 0
+        self.steps_since_apple = 0
+        self.end_reason = None
         self.snake = Snake(Position(0, 0), Direction.RIGHT)
         self.rng = Random(seed)
         self.free_coords_pool = RandomSet(
@@ -39,6 +51,10 @@ class Game:
         for segment in self.snake.occupied:
             self.free_coords_pool.discard(segment)
         self.food = self.free_coords_pool.pop_random(self.rng)
+
+    @property
+    def hunger_limit(self) -> int:
+        return self.hunger_base + self.hunger_per_segment * len(self.snake)
 
     def next_food(self) -> None:
         self.food = self.free_coords_pool.pop_random(self.rng)
@@ -79,9 +95,12 @@ class Game:
 
         if will_eat:
             self.score += 1
+            self.steps_since_apple = 0
             if not self.free_coords_pool:
                 return False
             self.next_food()
+        else:
+            self.steps_since_apple += 1
 
         return True
 
@@ -150,10 +169,16 @@ class Game:
         score_before = self.score
         still_playing = self.tick()
         next_state = self.game_state()
-        done = not still_playing or (
-            self.max_steps is not None and self.epoch >= self.max_steps
-        )
+        starved = self.steps_since_apple >= self.hunger_limit
         won = not still_playing and not self.free_coords_pool
+
+        if won:
+            self.end_reason = EndReason.WIN
+        elif not still_playing:
+            self.end_reason = EndReason.COLLISION
+        elif starved:
+            self.end_reason = EndReason.STARVATION
+        done = self.end_reason is not None
 
         if won:
             reward = 3.0
