@@ -4,8 +4,7 @@ from random import Random
 
 import torch
 
-from snake_dqn.agent import RelativeAction
-
+from .action import RelativeAction
 from .direction import Direction
 from .end_reason import EndReason
 from .position import Position

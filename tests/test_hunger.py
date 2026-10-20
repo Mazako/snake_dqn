@@ -1,7 +1,7 @@
 import unittest
 from collections import deque
 
-from snake_dqn.agent import RelativeAction
+from snake_dqn.action import RelativeAction
 from snake_dqn.end_reason import EndReason
 from snake_dqn.game import Game
 from snake_dqn.position import Position
