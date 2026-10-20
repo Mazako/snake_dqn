@@ -159,7 +159,9 @@ class Game:
 
         return delta / self.size
 
-    def step(self, action: RelativeAction) -> tuple[GameState, float, bool]:
+    def step(
+        self, action: RelativeAction
+    ) -> tuple[torch.Tensor, float, EndReason | None]:
         if action is RelativeAction.LEFT:
             self.snake.change_direction(self.snake.direction.left())
         elif action is RelativeAction.RIGHT:
@@ -167,7 +169,6 @@ class Game:
 
         score_before = self.score
         still_playing = self.tick()
-        next_state = self.game_state()
         starved = self.steps_since_apple >= self.hunger_limit
         won = not still_playing and not self.free_coords_pool
 
@@ -188,4 +189,4 @@ class Game:
         else:
             reward = -0.01
 
-        return next_state, reward, done
+        return self.state_img(), reward, self.end_reason

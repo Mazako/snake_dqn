@@ -36,7 +36,10 @@ class HungerTests(unittest.TestCase):
 
         results = [game.step(RelativeAction.FORWARD) for _ in range(3)]
 
-        self.assertEqual([done for _, _, done in results], [False, False, True])
+        self.assertEqual(
+            [end_reason is not None for _, _, end_reason in results],
+            [False, False, True],
+        )
         self.assertEqual(results[0][1], -0.01)
         self.assertEqual(results[-1][1], -10.0)
         self.assertIs(game.end_reason, EndReason.STARVATION)
@@ -55,11 +58,10 @@ class HungerTests(unittest.TestCase):
         game.snake.occupied = set(game.snake.segments)
         game.food = Position(0, 0)
 
-        _, reward, done = game.step(RelativeAction.FORWARD)
+        _, reward, end_reason = game.step(RelativeAction.FORWARD)
 
-        self.assertTrue(done)
         self.assertEqual(reward, -10.0)
-        self.assertIs(game.end_reason, EndReason.COLLISION)
+        self.assertIs(end_reason, EndReason.COLLISION)
 
     def test_eating_on_last_allowed_step_saves_snake(self) -> None:
         game = Game(11, hunger_base=3, hunger_per_segment=0)
@@ -67,7 +69,7 @@ class HungerTests(unittest.TestCase):
 
         results = [game.step(RelativeAction.FORWARD) for _ in range(3)]
 
-        self.assertFalse(results[-1][2])
+        self.assertIsNone(results[-1][2])
         self.assertIsNone(game.end_reason)
         self.assertEqual(results[-1][1], 3.0)
         self.assertEqual(game.steps_since_apple, 0)
@@ -81,7 +83,10 @@ class HungerTests(unittest.TestCase):
 
         results = [game.step(RelativeAction.FORWARD) for _ in range(3)]
 
-        self.assertEqual([done for _, _, done in results], [False, False, True])
+        self.assertEqual(
+            [end_reason is not None for _, _, end_reason in results],
+            [False, False, True],
+        )
 
     def test_rejects_invalid_hunger_parameters(self) -> None:
         with self.assertRaisesRegex(ValueError, "hunger_base"):
