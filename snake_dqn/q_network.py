@@ -2,6 +2,8 @@ import torch
 from torch import nn
 from torchrl.modules import NoisyLinear
 
+from snake_dqn.encoder import ENCODED_CHANNELS, HIDDEN, Encoder
+
 
 def make_q_network(size: int) -> nn.Module:
     return nn.Sequential(
@@ -24,20 +26,12 @@ class RainbowQNetwork(nn.Module):
         self.n_atoms = n_atoms
         self.size = size
         self.features = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, padding=1, padding_mode="circular"),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=3, padding=1, padding_mode="circular"),
-            nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=3, padding=1, padding_mode="circular"),
-            nn.ReLU(),
-            nn.Conv2d(128, 16, kernel_size=1),
-            nn.ReLU(),
-            nn.Flatten(start_dim=-3),
-            NoisyLinear(16 * size * size, 256),
+            Encoder(),
+            NoisyLinear(ENCODED_CHANNELS * size * size, HIDDEN),
             nn.ReLU(),
         )
-        self.value = NoisyLinear(256, n_atoms)
-        self.advantage = NoisyLinear(256, n_atoms * 3)
+        self.value = NoisyLinear(HIDDEN, n_atoms)
+        self.advantage = NoisyLinear(HIDDEN, n_atoms * 3)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         features = self.features(x)
