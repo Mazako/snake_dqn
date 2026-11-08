@@ -34,7 +34,7 @@ Educational experiment: Snake + DQN in Python on TorchRL. The owner wants to fig
 - After every code change, run `ruff check .` and `ruff format .` from that env.
 - Tests use `unittest`: `python -m unittest discover -s tests -p 'test*.py'`.
 - Format files, directories, functions, and class names with backticks.
-- Write math as \( ... \) inline and \[ ... \] for blocks.
+- Write math as $ ... $ inline and $$ ... $$ for blocks.
 
 ## Workflow
 
