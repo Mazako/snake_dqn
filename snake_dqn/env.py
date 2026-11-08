@@ -17,15 +17,32 @@ class SnakeEnv(EnvBase):
     ) -> None:
         super().__init__(device=device, batch_size=torch.Size([]))
         self.size = size
-        self.observation_spec = Bounded(
-            low=0.0, high=1.0, shape=torch.Size([3, size, size]), dtype=torch.float32
+        self.observation_spec = Composite(
+            observation=Bounded(
+                low=0.0,
+                high=1.0,
+                shape=torch.Size([3, size, size]),
+                dtype=torch.float32,
+                device=self.device,
+            ),
+            score=Unbounded(
+                shape=torch.Size([1]), dtype=torch.int64, device=self.device
+            ),
+            device=self.device,
         )
-        self.action_spec = OneHot(3)
-        self.reward_spec = Unbounded(1)
+        self.action_spec = OneHot(3, device=self.device)
+        self.reward_spec = Unbounded(1, device=self.device)
         self.done_spec = Composite(
-            done=Categorical(2, shape=torch.Size([1]), dtype=torch.bool),
-            terminated=Categorical(2, shape=torch.Size([1]), dtype=torch.bool),
-            truncated=Categorical(2, shape=torch.Size([1]), dtype=torch.bool),
+            done=Categorical(
+                2, shape=torch.Size([1]), dtype=torch.bool, device=self.device
+            ),
+            terminated=Categorical(
+                2, shape=torch.Size([1]), dtype=torch.bool, device=self.device
+            ),
+            truncated=Categorical(
+                2, shape=torch.Size([1]), dtype=torch.bool, device=self.device
+            ),
+            device=self.device,
         )
         self.game = Game(size, seed)
         self.set_seed(seed)
@@ -41,6 +58,7 @@ class SnakeEnv(EnvBase):
         return TensorDict(
             {
                 "observation": observation,
+                "score": torch.tensor([self.game.score]),
                 "reward": torch.tensor([reward], dtype=torch.float32),
                 "done": torch.tensor([done]),
                 "terminated": torch.tensor([terminated]),
@@ -53,7 +71,11 @@ class SnakeEnv(EnvBase):
     def _reset(self, tensordict: TensorDictBase, **kwargs) -> TensorDictBase:
         self.game = Game(self.size, self.rng.getrandbits(32))
         return TensorDict(
-            {"observation": self.game.state_img(), **self.full_done_spec.zero()},
+            {
+                "observation": self.game.state_img(),
+                "score": torch.tensor([self.game.score]),
+                **self.full_done_spec.zero(),
+            },
             batch_size=self.batch_size,
             device=self.device,
         )

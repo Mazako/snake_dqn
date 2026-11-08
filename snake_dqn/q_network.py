@@ -1,5 +1,3 @@
-from typing import Any
-
 import torch
 from torch import nn
 from torchrl.modules import NoisyLinear
@@ -32,17 +30,17 @@ class RainbowQNetwork(nn.Module):
             nn.ReLU(),
             nn.Conv2d(64, 128, kernel_size=3, padding=1, padding_mode="circular"),
             nn.ReLU(),
+            nn.Conv2d(128, 16, kernel_size=1),
+            nn.ReLU(),
             nn.Flatten(start_dim=-3),
+            NoisyLinear(16 * size * size, 256),
+            nn.ReLU(),
         )
-        self.value = nn.Sequential(
-            NoisyLinear(128 * size * size, 256), nn.ReLU(), NoisyLinear(256, 1)
-        )
-        self.advantage = nn.Sequential(
-            NoisyLinear(128 * size * size, 256), nn.ReLU(), NoisyLinear(256, 3)
-        )
+        self.value = NoisyLinear(256, n_atoms)
+        self.advantage = NoisyLinear(256, n_atoms * 3)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         features = self.features(x)
-        value = self.value(features)
-        advantage = self.advantage(features)
-        return value + advantage - advantage.mean(dim=-2, keepdim=True)
+        value = self.value(features).unflatten(-1, (self.n_atoms, 1))
+        advantage = self.advantage(features).unflatten(-1, (self.n_atoms, 3))
+        return value + advantage - advantage.mean(dim=-1, keepdim=True)
